@@ -5,7 +5,6 @@ Aplicación de escritorio para crear diagramas de acordes de guitarra de forma i
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![Qt](https://img.shields.io/badge/Qt-5%20%7C%206-green)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
-![License](https://img.shields.io/badge/license-MIT-orange)
 
 ## Características
 
@@ -103,6 +102,3 @@ Chordy/
 - [ ] Soporte para afinaciones alternativas
 - [ ] Biblioteca de acordes predefinidos
 
-## Licencia
-
-Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
