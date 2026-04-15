@@ -2,7 +2,11 @@
 #include <QPainter>
 #include <QPen>
 #include <QFont>
+#include <QLabel>
+#include <QFontMetrics>
 #include <QMouseEvent>
+#include <QResizeEvent>
+#include <QToolButton>
 #include <algorithm>
 #include "chordGrid.h"
 
@@ -13,6 +17,37 @@ ChordGrid::ChordGrid(QWidget *parent, const uint8_t frets)
 
 bool ChordGrid::create()
 {
+    m_fretUp = new QToolButton(this);
+    m_fretUp->setArrowType(Qt::UpArrow);
+    m_fretUp->setAutoRepeat(true);
+    m_fretUp->setAutoRepeatDelay(300);
+    m_fretUp->setAutoRepeatInterval(80);
+    m_fretUp->setFixedSize(26, 22);
+    m_fretUp->setToolTip(tr("Traste inicial más agudo"));
+    connect(m_fretUp, &QToolButton::clicked, this, &ChordGrid::onStartFretUp);
+
+    m_fretLabel = new QLabel(this);
+    m_fretLabel->setAlignment(Qt::AlignCenter);
+    {
+        QFont f = m_fretLabel->font();
+        f.setPixelSize(20);
+        m_fretLabel->setFont(f);
+    }
+    m_fretLabel->setMinimumWidth(26);
+    m_fretLabel->setFixedHeight(24);
+
+    m_fretDown = new QToolButton(this);
+    m_fretDown->setArrowType(Qt::DownArrow);
+    m_fretDown->setAutoRepeat(true);
+    m_fretDown->setAutoRepeatDelay(300);
+    m_fretDown->setAutoRepeatInterval(80);
+    m_fretDown->setFixedSize(26, 22);
+    m_fretDown->setToolTip(tr("Traste inicial más grave"));
+    connect(m_fretDown, &QToolButton::clicked, this, &ChordGrid::onStartFretDown);
+
+    updateFretLabelText();
+    updateFretButtonsEnabled();
+    positionFretControls();
     return true;
 }
 
@@ -31,6 +66,9 @@ void ChordGrid::setChord(const std::string              &name,
     m_barreFret = barreFret;
     m_barreFrom = barreFrom;
     m_barreTo   = barreTo;
+    updateFretLabelText();
+    updateFretButtonsEnabled();
+    positionFretControls();
     update();
 }
 
@@ -38,9 +76,9 @@ QString ChordGrid::toRoman(int n)
 {
     static const char *table[] = {
         "I","II","III","IV","V","VI","VII","VIII","IX","X",
-        "XI","XII","XIII","XIV","XV"
+        "XI","XII","XIII","XIV","XV", "XVI", "XVII", "XVIII", "XIX", "XX"
     };
-    if (n >= 1 && n <= 15)
+    if (n >= 1 && n <= chordMaxFret)
         return table[n - 1];
     return QString::number(n);
 }
@@ -101,17 +139,7 @@ void ChordGrid::paintEvent(QPaintEvent * /* event */)
         p.drawText(markerRect, Qt::AlignCenter, text);
     }
 
-    // Número cejilla
-    if (m_startFret > 1) 
-    {
-        int fretRow = (m_barreFret > 0) ? m_barreFret : 1;
-        int y = y0 + (fretRow - 1) * cellH + cellH / 2;
-        int x = x0 + (totalStrings - 1) * cellW + 10;
-        font.setPixelSize(12);
-        p.setFont(font);
-        QRect romanRect(x, y - 10, right - 8, 20);
-        p.drawText(romanRect, Qt::AlignVCenter | Qt::AlignLeft, toRoman(m_startFret));
-    }
+    // El número de traste (romano) lo muestra m_fretLabel, con botones ↑/↓ encima y debajo.
 
     //cejilla
     if (m_barreFret > 0) 
@@ -189,4 +217,89 @@ void ChordGrid::setName(const QString &name)
 {
     m_name = name.toStdString();
     update();
+}
+
+void ChordGrid::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    positionFretControls();
+}
+
+void ChordGrid::positionFretControls()
+{
+    if (!m_fretUp || !m_fretDown || !m_fretLabel)
+        return;
+    if (width() <= 0 || height() <= 0)
+        return;
+
+    const int x0    = left + 10;
+    const int y0    = top;
+    const int gridW = width()  - left - right;
+    const int gridH = height() - top  - bottom;
+    if (gridW <= 0 || gridH <= 0)
+        return;
+
+    const int cellW = gridW / (totalStrings - 1);
+    const int cellH = gridH / totalFrets;
+
+    const int fretRow = (m_barreFret > 0) ? m_barreFret : 1;
+    const int cy      = y0 + (fretRow - 1) * cellH + cellH / 2;
+    const int x       = x0 + (totalStrings - 1) * cellW + 6;
+
+    const int btnW = m_fretUp->width();
+    const int btnH = m_fretUp->height();
+    const int labelH = m_fretLabel->height();
+    QFontMetrics fm(m_fretLabel->font());
+    const int labelTextW = fm.horizontalAdvance(m_fretLabel->text());
+    const int colW = qMax(btnW, labelTextW + 8);
+
+    const int gap = 2;
+    const int totalH = btnH + gap + labelH + gap + btnH;
+    int topY = cy - totalH / 2;
+
+    m_fretUp->setGeometry(x, topY, colW, btnH);
+    m_fretLabel->setGeometry(x, topY + btnH + gap, colW, labelH);
+    m_fretDown->setGeometry(x, topY + btnH + gap + labelH + gap, colW, btnH);
+}
+
+void ChordGrid::updateFretLabelText()
+{
+    if (!m_fretLabel)
+        return;
+    if (m_startFret > 0)
+        m_fretLabel->setText(toRoman(m_startFret));
+    else
+        m_fretLabel->clear();
+}
+
+void ChordGrid::updateFretButtonsEnabled()
+{
+    if (m_fretUp)
+        m_fretUp->setEnabled(m_startFret < chordMaxFret);
+    if (m_fretDown)
+        m_fretDown->setEnabled(m_startFret > 1);
+}
+
+void ChordGrid::onStartFretUp()
+{
+    if (m_startFret >= chordMaxFret)
+        return;
+    m_startFret++;
+    updateFretLabelText();
+    updateFretButtonsEnabled();
+    positionFretControls();
+    update();
+    emit gridChanged(m_startFret, m_markers, m_dots);
+}
+
+void ChordGrid::onStartFretDown()
+{
+    if (m_startFret <= 1)
+        return;
+    m_startFret--;
+    updateFretLabelText();
+    updateFretButtonsEnabled();
+    positionFretControls();
+    update();
+    emit gridChanged(m_startFret, m_markers, m_dots);
 }
