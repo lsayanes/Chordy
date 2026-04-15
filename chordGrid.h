@@ -41,6 +41,7 @@ public:
                   int                             barreTo   = 5);
 
     void setName(const QString &name);
+    bool findFret(uint8_t fret = 1) const;
 
 private slots:
     void onStartFretUp();
@@ -61,6 +62,8 @@ private:
     void positionFretControls();
     void updateFretLabelText();
     void updateFretButtonsEnabled();
+    /** Recalcula cejilla visual y extensión según los puntos (fila del diagrama, no m_startFret). */
+    void refreshBarreFromDots();
 
     QToolButton *m_fretUp   = nullptr;
     QToolButton *m_fretDown = nullptr;

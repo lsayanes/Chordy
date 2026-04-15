@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QResizeEvent>
 #include <QToolButton>
+#include <iostream>
 #include <algorithm>
 #include "chordGrid.h"
 
@@ -209,7 +210,9 @@ void ChordGrid::mousePressEvent(QMouseEvent *event)
     else
         m_dots.push_back({s, f});
 
+    refreshBarreFromDots();
     update();
+
     emit gridChanged(m_startFret, m_markers, m_dots);
 }
 
@@ -217,6 +220,55 @@ void ChordGrid::setName(const QString &name)
 {
     m_name = name.toStdString();
     update();
+}
+
+bool ChordGrid::findFret(uint8_t fret) const
+{
+    uint8_t fingers = 0;
+    uint8_t strings[totalStrings + 1] = { 0 };
+
+    for (const auto &dot : m_dots) 
+    {
+        if(fret == dot.fret) 
+        {
+            fingers++;
+            strings[dot.string] = totalStrings - dot.string;
+        }
+    }
+
+    int8_t ratio = 21;
+    for(uint8_t i = 0; i < totalStrings; i++)
+        ratio-=strings[i];
+
+    if(fingers > 1 && ratio <= 14)
+    {
+        return true;
+    }
+    return false;
+
+}
+
+void ChordGrid::refreshBarreFromDots()
+{
+    m_barreFret = 0;
+    for (uint8_t f = 1; f <= totalFrets; ++f) {
+        if (!findFret(f))
+            continue;
+        m_barreFret = static_cast<int>(f);
+        int minS = totalStrings;
+        int maxS = 0;
+        for (const auto &dot : m_dots) {
+            if (dot.fret == static_cast<int>(f)) {
+                minS = std::min(minS, dot.string);
+                maxS = std::max(maxS, dot.string);
+            }
+        }
+        if (minS <= maxS) {
+            m_barreFrom = minS;
+            m_barreTo   = maxS;
+        }
+        return;
+    }
 }
 
 void ChordGrid::resizeEvent(QResizeEvent *event)
@@ -242,8 +294,8 @@ void ChordGrid::positionFretControls()
     const int cellW = gridW / (totalStrings - 1);
     const int cellH = gridH / totalFrets;
 
-    const int fretRow = (m_barreFret > 0) ? m_barreFret : 1;
-    const int cy      = y0 + (fretRow - 1) * cellH + cellH / 2;
+    // Siempre alineado a la primera fila del mástil; no mover con la cejilla (m_barreFret).
+    const int cy = y0 + cellH / 2;
     const int x       = x0 + (totalStrings - 1) * cellW + 6;
 
     const int btnW = m_fretUp->width();
@@ -288,6 +340,7 @@ void ChordGrid::onStartFretUp()
     updateFretLabelText();
     updateFretButtonsEnabled();
     positionFretControls();
+    refreshBarreFromDots();
     update();
     emit gridChanged(m_startFret, m_markers, m_dots);
 }
@@ -300,6 +353,7 @@ void ChordGrid::onStartFretDown()
     updateFretLabelText();
     updateFretButtonsEnabled();
     positionFretControls();
+    refreshBarreFromDots();
     update();
     emit gridChanged(m_startFret, m_markers, m_dots);
 }
