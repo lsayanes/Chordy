@@ -93,6 +93,11 @@ Chordy/
 3. **Detección:** Se prueban todas las notas activas como posible tónica y se compara el conjunto de intervalos resultante contra una tabla de plantillas de acordes conocidos. Gana la plantilla con mayor número de intervalos coincidentes.
 4. **Resultado:** El nombre del acorde se muestra debajo del diagrama, o `?` si no se encuentra coincidencia.
 
+
+<video src="chordy.mov" controls="controls" width="100%" height="auto"></video>
+
+
+
 ## Roadmap
 
 - [ ] Copiar diagrama como imagen al portapapeles

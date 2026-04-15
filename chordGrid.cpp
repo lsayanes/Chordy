@@ -53,7 +53,7 @@ bool ChordGrid::create()
 
 void ChordGrid::setChord(const std::string              &name,
                           int                             startFret,
-                          const std::array<TopMarker, 6> &markers,
+                          const std::array<TopMarker, totalStrings> &markers,
                           const std::vector<Dot>          &dots,
                           int                             barreFret,
                           int                             barreFrom,
