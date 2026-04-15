@@ -224,28 +224,28 @@ void ChordGrid::setName(const QString &name)
 
 bool ChordGrid::findFret(uint8_t fret) const
 {
-    uint8_t fingers = 0;
-    uint8_t strings[totalStrings + 1] = { 0 };
+    int minString = totalStrings;
+    int maxString = -1;
+    int fingers   = 0;
 
     for (const auto &dot : m_dots) 
     {
-        if(fret == dot.fret) 
-        {
-            fingers++;
-            strings[dot.string] = totalStrings - dot.string;
-        }
+        if (dot.fret != fret)
+            continue;
+        fingers++;
+        minString = std::min(minString, dot.string);
+        maxString = std::max(maxString, dot.string);
     }
 
-    int8_t ratio = 21;
-    for(uint8_t i = 0; i < totalStrings; i++)
-        ratio-=strings[i];
+    if (fingers < 2)
+        return false;
 
-    if(fingers > 1 && ratio <= 14)
-    {
-        return true;
-    }
-    return false;
-
+    // Span: cuántas cuerdas cubre el rango de dedos en este traste.
+    // Con 2+ dedos y un span ≥ 2 (al menos 3 cuerdas) es claramente
+    // una cejilla.  Con span == 1 (cuerdas adyacentes) se usan dedos
+    // separados normalmente, así que no la mostramos.
+    const int span = maxString - minString;
+    return span >= 2;
 }
 
 void ChordGrid::refreshBarreFromDots()
