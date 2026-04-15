@@ -9,7 +9,12 @@
 
 class ChordGrid : public QWidget
 {
+    Q_OBJECT
+
 public:
+
+    static constexpr int8_t totalStrings { 6 };
+
     enum TopMarker { None, Open, Muted };
 
     struct Dot {
@@ -17,7 +22,7 @@ public:
         int fret;   // 1-based relativo al diagrama
     };
 
-    explicit ChordGrid(QWidget *parent);
+    explicit ChordGrid(QWidget *parent, const uint8_t frets);
     ~ChordGrid() override = default;
 
     bool create();
@@ -30,8 +35,16 @@ public:
                   int                             barreFrom = 0,
                   int                             barreTo   = 5);
 
+    void setName(const QString &name);
+
+signals:
+    void gridChanged(int startFret,
+                     std::array<ChordGrid::TopMarker, 6> markers,
+                     std::vector<ChordGrid::Dot> dots);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     static QString toRoman(int n);
@@ -41,6 +54,15 @@ private:
     int                      m_barreFret = -1;  // fila 1-based, -1 = sin barre
     int                      m_barreFrom = 0;
     int                      m_barreTo   = 5;
-    std::array<TopMarker, 6> m_markers   = {};
-    std::vector<Dot>         m_dots;
+
+    std::array<TopMarker, totalStrings>  m_markers   = {}; //O u X
+    std::vector<Dot>                     m_dots; //dedos
+
+    const uint8_t totalFrets;
+
+    static constexpr int top      { 28 };
+    static constexpr int left     { 20 };
+    static constexpr int right    { 38 };
+    static constexpr int bottom   { 30 };
+
 };

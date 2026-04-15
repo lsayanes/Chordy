@@ -15,7 +15,16 @@ public:
     virtual ~Chordy() = default;
 
     bool create(const std::string &title = "Chordy");
-private:
 
-    ChordGrid *pGrid;
+private slots:
+    void onGridChanged(int startFret,
+                       std::array<ChordGrid::TopMarker, 6> markers,
+                       std::vector<ChordGrid::Dot> dots);
+
+private:
+    QString detectChord(int startFret,
+                        const std::array<ChordGrid::TopMarker, 6> &markers,
+                        const std::vector<ChordGrid::Dot> &dots) const;
+
+    ChordGrid *pGrid = nullptr;
 };
