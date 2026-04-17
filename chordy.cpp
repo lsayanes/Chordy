@@ -66,14 +66,14 @@ bool Chordy::create(const std::string &title)
 }
 
 void Chordy::onGridChanged(int startFret,
-                            std::array<ChordGrid::TopMarker, 6> markers,
+                            std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> markers,
                             std::vector<ChordGrid::Dot> dots)
 {
     pGrid->setName(detectChord(startFret, markers, dots));
 }
 
 QString Chordy::detectChord(int startFret,
-                              const std::array<ChordGrid::TopMarker, 6> &markers,
+                              const std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> &markers,
                               const std::vector<ChordGrid::Dot> &dots) const
 {
     // Afinación estándar: E A D G B E (clases de tono, 0=C)

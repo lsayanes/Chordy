@@ -18,12 +18,12 @@ public:
 
 private slots:
     void onGridChanged(int startFret,
-                       std::array<ChordGrid::TopMarker, 6> markers,
+                       std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> markers,
                        std::vector<ChordGrid::Dot> dots);
 
 private:
     QString detectChord(int startFret,
-                        const std::array<ChordGrid::TopMarker, 6> &markers,
+                        const std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> &markers,
                         const std::vector<ChordGrid::Dot> &dots) const;
 
     ChordGrid *pGrid = nullptr;
