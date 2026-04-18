@@ -25,6 +25,16 @@ bool Chordy::create(const std::string &title)
         std::cout << e.what() << '\n';
         return false;
     }
+
+	try
+	{
+		pDoFret = new QPushButton(this);
+	}
+	catch(const std::bad_alloc& e)
+	{
+		std::cout << e.what() << '\n';
+		return false;
+	}
     
     if(pGrid->create())
     {
@@ -33,8 +43,23 @@ bool Chordy::create(const std::string &title)
         connect(pGrid, &ChordGrid::gridChanged,
                 this,  &Chordy::onGridChanged);
 
+		connect(pDoFret, &QPushButton::clicked,
+				pGrid, &ChordGrid::doFret);
 
-        // Ejemplo: Em9/11 desde traste VI
+		pDoFret->setText("Do a fret");
+
+		pDoFret->setFixedSize(100, 30);
+        pDoFret->move(ChordGrid::left -2, 0);
+		pDoFret->setStyleSheet("QPushButton { background-color: rgb(200, 200, 200); }");
+		pDoFret->setStyleSheet("QPushButton { color: rgb(0, 0, 0); }");
+		pDoFret->setStyleSheet("QPushButton { border: 1px solid rgb(100, 100, 100); }");
+		pDoFret->setStyleSheet("QPushButton { border-radius: 20px; }");
+		pDoFret->setStyleSheet("QPushButton { padding: 5px; }");
+		pDoFret->setStyleSheet("QPushButton { font-size: 12px; }");
+		pDoFret->setStyleSheet("QPushButton { font-weight: bold; }");
+		pDoFret->setStyleSheet("QPushButton { font-family: Arial, sans-serif; }");
+        
+		// Ejemplo: Em9/11 desde traste VI
         // cuerdas: 0=Mi grave ... 5=Mi agudo
         // O=open, X=muted
         /*

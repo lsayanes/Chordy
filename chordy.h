@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QPushButton>
 #include <QWidget>
 
 #include "chordGrid.h"
@@ -27,4 +28,5 @@ private:
                         const std::vector<ChordGrid::Dot> &dots) const;
 
     ChordGrid *pGrid = nullptr;
+    QPushButton *pDoFret = nullptr;
 };

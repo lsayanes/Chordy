@@ -357,3 +357,8 @@ void ChordGrid::onStartFretDown()
     update();
     emit gridChanged(m_startFret, m_markers, m_dots);
 }
+
+void ChordGrid::doFret()
+{
+    std::cout << "doFret" << std::endl;
+}

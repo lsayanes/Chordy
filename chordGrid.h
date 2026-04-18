@@ -20,6 +20,12 @@ public:
     static constexpr uint8_t totalStrings { 6 };
     static constexpr uint8_t chordMaxFret { 20 };
 
+    static constexpr int top      { 35 };
+    static constexpr int left     { 20 };
+    static constexpr int right    { 65 };
+    static constexpr int bottom   { 45 };
+
+
     enum TopMarker { None, Open, Muted };
 
     struct Dot {
@@ -46,6 +52,8 @@ public:
 private slots:
     void onStartFretUp();
     void onStartFretDown();
+public slots:
+	void doFret();
 
 signals:
     void gridChanged(int startFret,
@@ -80,9 +88,5 @@ private:
 
     const uint8_t totalFrets;
 
-    static constexpr int top      { 28 };
-    static constexpr int left     { 20 };
-    static constexpr int right    { 65 };
-    static constexpr int bottom   { 30 };
 
 };
