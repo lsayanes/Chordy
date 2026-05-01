@@ -16,7 +16,7 @@ bool Chordy::create(const std::string &title)
     setWindowTitle(title.c_str());
     resize(320, 580);
 
-    setStyleSheet("QMainWindow { background-color: rgb(230, 230, 230); }");
+    setStyleSheet("QMainWindow { background-color: rgb(255, 255, 255); }");
 
     try
     {

@@ -3,12 +3,16 @@
 
 #include <QWidget>
 #include <QString>
+#include <QImage>
+#include <QSize>
 #include <array>
 #include <vector>
 #include <string>
 #include <QToolButton>
 #include <QLabel>
 #include <QResizeEvent>
+
+class QPainter;
 
 
 class ChordGrid : public QWidget
@@ -51,6 +55,9 @@ public:
     /** Representación textual del diagrama (mástil + nombre del acorde) lista para portapapeles. */
     QString toText() const;
 
+    /** Renderiza el diagrama (sin botones) a un QImage. Tamaño por defecto = tamaño actual del widget. */
+    QImage  toImage(const QSize &targetSize = QSize()) const;
+
     void refresh();
     void refreshFret();
 
@@ -79,6 +86,12 @@ private:
     void positionFretControls();
     void updateFretLabelText();
     void updateFretButtonsEnabled();
+
+    /** Pinta el diagrama del acorde dentro de `area`. Si drawFretRoman == true,
+     *  además pinta el número romano del traste (cuando se renderiza a imagen, que no
+     *  tiene QLabel hijo). En el paintEvent del widget se pasa false, porque ese
+     *  número lo muestra el QLabel `m_fretLabel`. */
+    void renderDiagram(QPainter &p, const QRect &area, bool drawFretRoman) const;
 
     QToolButton *createFretButton(const std::string &toolTip, Qt::ArrowType type);
 
