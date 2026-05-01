@@ -7,6 +7,9 @@
 #include <QMouseEvent>
 #include <QResizeEvent>
 #include <QToolButton>
+#include <QClipboard>
+#include <QGuiApplication>
+#include <QStringList>
 #include <iostream>
 #include <algorithm>
 #include "chordGrid.h"
@@ -370,4 +373,83 @@ void ChordGrid::refreshFret()
     updateFretButtonsEnabled();
     positionFretControls();
 
+}
+
+QString ChordGrid::toText() const
+{
+    // Cada fila k (1..totalFrets) es un traste relativo al diagrama.
+    // El traste real corresponde a (m_startFret + k - 1).
+    // Por cuerda y fila:
+    //   '|'  cuerda sin pisar en ese traste
+    //   'O'  dedo (dot)
+    //   '-'  cejilla
+    // Las cuerdas se separan con un espacio para alinear visualmente.
+    // El número romano del traste real se imprime al lado de la fila de la cejilla
+    // (o de la fila 1 cuando hay startFret > 1 y no hay cejilla).
+    QStringList lines;
+
+    const int barreLo = std::min<int>(m_barreFrom, m_barreTo);
+    const int barreHi = std::max<int>(m_barreFrom, m_barreTo);
+
+    int markerRow  = -1;
+    int markerFret = -1;
+    if (m_barreFret > 0)
+    {
+        markerRow  = m_barreFret;
+        markerFret = m_startFret + m_barreFret - 1;
+    }
+    else if (m_startFret > 1)
+    {
+        markerRow  = 1;
+        markerFret = m_startFret;
+    }
+
+    for (int k = 1; k <= totalFrets; ++k)
+    {
+        std::array<QChar, totalStrings> cells;
+        for (int s = 0; s < totalStrings; ++s)
+            cells[s] = QChar('|');
+
+        if (m_barreFret == k)
+        {
+            for (int s = barreLo; s <= barreHi && s < totalStrings; ++s)
+                cells[s] = QChar('-');
+        }
+
+        for (const auto &d : m_dots)
+        {
+            if (d.fret == k && d.string >= 0 && d.string < totalStrings)
+                cells[d.string] = QChar('O');
+        }
+
+        QString line;
+        for (int s = 0; s < totalStrings; ++s)
+        {
+            if (s > 0) line += QChar(' ');
+            line += cells[s];
+        }
+
+        if (k == markerRow && markerFret > 0)
+            line += QString("  %1").arg(toRoman(markerFret));
+
+        lines << line;
+    }
+
+    if (!m_name.empty())
+    {
+        // Centrar el nombre al ancho del mástil ("X X X X X X" => 2*totalStrings - 1).
+        const int diagramWidth = totalStrings * 2 - 1;
+        QString name = QString::fromStdString(m_name);
+        int leftPad = std::max(0, (diagramWidth - static_cast<int>(name.size())) / 2);
+        lines << QString(leftPad, QChar(' ')) + name;
+    }
+
+    return lines.join('\n');
+}
+
+void ChordGrid::copyToClipboard()
+{
+    QClipboard *cb = QGuiApplication::clipboard();
+    if (cb)
+        cb->setText(toText());
 }

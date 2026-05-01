@@ -31,6 +31,7 @@ bool Chordy::create(const std::string &title)
 	try
 	{
 		pDoFret = new QPushButton(this);
+		pCopy   = new QPushButton(this);
 	}
 	catch(const std::bad_alloc& e)
 	{
@@ -48,21 +49,32 @@ bool Chordy::create(const std::string &title)
 		connect(pDoFret, &QPushButton::clicked,
 				pGrid, &ChordGrid::doFret);
 
-		pDoFret->setText("Do a fret");
+		connect(pCopy, &QPushButton::clicked,
+				pGrid, &ChordGrid::copyToClipboard);
 
-		pDoFret->setFixedSize(100, 30);
-        pDoFret->move(ChordGrid::left -2, (ChordGrid::top - pDoFret->height()) - 7);
-		pDoFret->setStyleSheet(
+		static const char *kPillStyle =
 			"QPushButton {"
 			"  background-color: rgb(200, 200, 200);"
 			"  color: rgb(0, 0, 0);"
 			"  border: 1px solid rgb(200, 200, 200);"
-			"  border-radius: 15px;"  // ~mitad de la altura (30) para forma de pastilla
+			"  border-radius: 15px;"
 			"  padding: 5px;"
 			"  font-size: 12px;"
 			"  font-weight: bold;"
 			"  font-family: Arial, sans-serif;"
-			"}");
+			"}";
+
+		pDoFret->setText("Do a fret");
+		pDoFret->setFixedSize(100, 30);
+		pDoFret->move(ChordGrid::left - 2, (ChordGrid::top - pDoFret->height()) - 7);
+		pDoFret->setStyleSheet(kPillStyle);
+
+		pCopy->setText("Copiar");
+		pCopy->setToolTip("Copiar el diagrama del acorde como texto");
+		pCopy->setFixedSize(80, 30);
+		pCopy->move(ChordGrid::left - 2 + pDoFret->width() + 6,
+					(ChordGrid::top - pCopy->height()) - 7);
+		pCopy->setStyleSheet(kPillStyle);
         
 		// Ejemplo: Em9/11 desde traste VI
         // cuerdas: 0=Mi grave ... 5=Mi agudo

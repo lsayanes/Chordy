@@ -48,6 +48,9 @@ public:
 
     void setName(const QString &name);
 
+    /** Representación textual del diagrama (mástil + nombre del acorde) lista para portapapeles. */
+    QString toText() const;
+
     void refresh();
     void refreshFret();
 
@@ -56,6 +59,7 @@ private slots:
     void onStartFretDown();
 public slots:
 	void doFret();
+	void copyToClipboard();
 
 signals:
     void gridChanged(int8_t startFret,

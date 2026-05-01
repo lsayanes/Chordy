@@ -35,4 +35,5 @@ private:
 
     ChordGrid *pGrid = nullptr;
     QPushButton *pDoFret = nullptr;
+    QPushButton *pCopy   = nullptr;
 };
