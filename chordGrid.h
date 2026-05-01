@@ -29,8 +29,8 @@ public:
     enum TopMarker { None, Open, Muted };
 
     struct Dot {
-        int string; // 0 = low E ... 5 = high E
-        int fret;   // 1-based relativo al diagrama
+        int8_t string; // 0 = low E ... 5 = high E
+        int8_t fret;   // 1-based relativo al diagrama
     };
 
     explicit ChordGrid(QWidget *parent, const uint8_t frets);
@@ -39,15 +39,17 @@ public:
     bool create();
 
     void setChord(const std::string                             &name,
-                  int                                           startFret,
+                  int8_t                                           startFret,
                   const std::array<TopMarker, totalStrings>     &markers,
                   const std::vector<Dot>                        &dots,
-                  int                             barreFret = -1,
-                  int                             barreFrom = 0,
-                  int                             barreTo   = 5);
+                  int8_t                             barreFret = -1,
+                  int8_t                             barreFrom = 0,
+                  int8_t                             barreTo   = 5);
 
     void setName(const QString &name);
-    bool findFret(uint8_t fret = 1) const;
+
+    void refresh();
+    void refreshFret();
 
 private slots:
     void onStartFretUp();
@@ -56,7 +58,7 @@ public slots:
 	void doFret();
 
 signals:
-    void gridChanged(int startFret,
+    void gridChanged(int8_t startFret,
                      std::array<ChordGrid::TopMarker, totalStrings> markers,
                      std::vector<ChordGrid::Dot> dots);
 
@@ -66,12 +68,10 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private:
-    static QString toRoman(int n);
+    static QString toRoman(int8_t n);
     void positionFretControls();
     void updateFretLabelText();
     void updateFretButtonsEnabled();
-    /** Recalcula cejilla visual y extensión según los puntos (fila del diagrama, no m_startFret). */
-    void refreshBarreFromDots();
 
     QToolButton *createFretButton(const std::string &toolTip, Qt::ArrowType type);
 
@@ -80,10 +80,10 @@ private:
     QLabel      *m_fretLabel = nullptr;
 
     std::string              m_name;
-    int                      m_startFret = 1;
-    int                      m_barreFret = -1;  // fila 1-based, -1 = sin barre
-    int                      m_barreFrom = 0;
-    int                      m_barreTo   = 5;
+    int8_t                      m_startFret = 1;
+    int8_t                      m_barreFret = -1;  // fila 1-based, -1 = sin barre
+    int8_t                      m_barreFrom = 0;
+    int8_t                      m_barreTo   = 5;
 
     std::array<TopMarker, totalStrings>  m_markers   = {}; //O u X
     std::vector<Dot>                     m_dots; //dedos

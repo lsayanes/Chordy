@@ -63,12 +63,12 @@ bool ChordGrid::create()
 }
 
 void ChordGrid::setChord(const std::string              &name,
-                          int                             startFret,
+                          int8_t                             startFret,
                           const std::array<TopMarker, totalStrings> &markers,
                           const std::vector<Dot>          &dots,
-                          int                             barreFret,
-                          int                             barreFrom,
-                          int                             barreTo)
+                          int8_t                             barreFret,
+                          int8_t                             barreFrom,
+                          int8_t                             barreTo)
 {
     m_name      = name;
     m_startFret = startFret;
@@ -83,7 +83,7 @@ void ChordGrid::setChord(const std::string              &name,
     update();
 }
 
-QString ChordGrid::toRoman(int n)
+QString ChordGrid::toRoman(int8_t n)
 {
     static const char *table[] = {
         "I","II","III","IV","V","VI","VII","VIII","IX","X",
@@ -127,7 +127,7 @@ void ChordGrid::paintEvent(QPaintEvent * /* event */)
     }
 
     //trastes
-    for (int f = 0; f <= totalFrets; f++) 
+    for (int8_t f = 0; f <= totalFrets; f++) 
     {
         if (f == 0 && m_startFret == 1) 
             continue; 
@@ -141,9 +141,11 @@ void ChordGrid::paintEvent(QPaintEvent * /* event */)
     font.setPixelSize(14);
     p.setFont(font);
     p.setPen(Qt::black);
-    for (int s = 0; s < totalStrings; s++) 
+    for (int8_t s = 0; s < totalStrings; s++) 
     {
-        if (m_markers[s] == None) continue;
+        if (m_markers[s] == None) 
+            continue;
+        
         QString text = (m_markers[s] == Open) ? "O" : "X";
         int x = x0 + s * cellW;
         QRect markerRect(x - 8, 2, 16, top - 4);
@@ -159,6 +161,7 @@ void ChordGrid::paintEvent(QPaintEvent * /* event */)
         int x1 = x0 + m_barreFrom * cellW;
         int x2 = x0 + m_barreTo   * cellW;
         int thickness = static_cast<int>(cellH * 0.05);
+        
         p.setPen(QPen(Qt::black, thickness, Qt::SolidLine, Qt::RoundCap));
         p.drawLine(x1, y, x2, y);
     }
@@ -200,12 +203,12 @@ void ChordGrid::mousePressEvent(QMouseEvent *event)
     const int py = event->pos().y();
 
     // determinar cuerda más cercana
-    int s = (px - left + cellW / 2) / cellW;
+    int8_t s = (px - left + cellW / 2) / cellW;
     if (s < 0 || s >= totalStrings) 
         return;
 
     // determinar traste (1-based)
-    int f = (py - top) / cellH + 1;
+    int8_t f = (py - top) / cellH + 1;
     if (f < 1 || f > totalFrets) 
         return;
 
@@ -220,10 +223,7 @@ void ChordGrid::mousePressEvent(QMouseEvent *event)
     else
         m_dots.push_back({s, f});
 
-    refreshBarreFromDots();
-    update();
-
-    emit gridChanged(m_startFret, m_markers, m_dots);
+    refresh();
 }
 
 void ChordGrid::setName(const QString &name)
@@ -232,60 +232,12 @@ void ChordGrid::setName(const QString &name)
     update();
 }
 
-bool ChordGrid::findFret(uint8_t fret) const
-{
-    int minString = totalStrings;
-    int maxString = -1;
-    int fingers   = 0;
-
-    for (const auto &dot : m_dots) 
-    {
-        if (dot.fret != fret)
-            continue;
-        fingers++;
-        minString = std::min(minString, dot.string);
-        maxString = std::max(maxString, dot.string);
-    }
-
-    if (fingers < 2)
-        return false;
-
-    // Span: cuántas cuerdas cubre el rango de dedos en este traste.
-    // Con 2+ dedos y un span ≥ 2 (al menos 3 cuerdas) es claramente
-    // una cejilla.  Con span == 1 (cuerdas adyacentes) se usan dedos
-    // separados normalmente, así que no la mostramos.
-    const int span = maxString - minString;
-    return span >= 2;
-}
-
-void ChordGrid::refreshBarreFromDots()
-{
-    m_barreFret = 0;
-    for (uint8_t f = 1; f <= totalFrets; ++f) {
-        if (!findFret(f))
-            continue;
-        m_barreFret = static_cast<int>(f);
-        int minS = totalStrings;
-        int maxS = 0;
-        for (const auto &dot : m_dots) {
-            if (dot.fret == static_cast<int>(f)) {
-                minS = std::min(minS, dot.string);
-                maxS = std::max(maxS, dot.string);
-            }
-        }
-        if (minS <= maxS) {
-            m_barreFrom = minS;
-            m_barreTo   = maxS;
-        }
-        return;
-    }
-}
-
 void ChordGrid::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     positionFretControls();
 }
+
 
 void ChordGrid::positionFretControls()
 {
@@ -346,29 +298,76 @@ void ChordGrid::onStartFretUp()
 {
     if (m_startFret >= chordMaxFret)
         return;
+    
     m_startFret++;
-    updateFretLabelText();
-    updateFretButtonsEnabled();
-    positionFretControls();
-    refreshBarreFromDots();
-    update();
-    emit gridChanged(m_startFret, m_markers, m_dots);
+
+    refreshFret();
+    refresh();
 }
 
 void ChordGrid::onStartFretDown()
 {
     if (m_startFret <= 1)
         return;
+
     m_startFret--;
-    updateFretLabelText();
-    updateFretButtonsEnabled();
-    positionFretControls();
-    refreshBarreFromDots();
-    update();
-    emit gridChanged(m_startFret, m_markers, m_dots);
+
+    refreshFret();
+    refresh();
 }
 
 void ChordGrid::doFret()
 {
-    std::cout << "doFret" << std::endl;
+
+    if(m_barreFret > 0)
+    {
+        m_barreFret = -1;
+    }
+    else 
+    {
+        size_t total = m_dots.size();
+
+        if (total > 1)
+        {    
+
+            const auto &last = m_dots[total - 1];
+            const auto &second_last = m_dots[total - 2];
+
+            if(
+                last.fret == second_last.fret &&
+                last.string != second_last.string)
+            {         
+                m_barreFret = last.fret;
+                m_barreFrom = last.string;
+                m_barreTo = second_last.string;
+
+                std::vector<Dot>::iterator it = m_dots.begin();
+
+                while (it != m_dots.end())
+                {
+                    if(it->fret == m_barreFret)
+                        it = m_dots.erase(it);
+                    else
+                        it++;
+                }
+            }
+
+        }
+    }
+
+    refresh();
+}
+
+void ChordGrid::refresh()
+{
+    update();
+    emit gridChanged(m_startFret, m_markers, m_dots);
+}
+
+void ChordGrid::refreshFret()
+{
+    updateFretLabelText();
+    updateFretButtonsEnabled();
+    positionFretControls();
+
 }

@@ -49,7 +49,7 @@ bool Chordy::create(const std::string &title)
 		pDoFret->setText("Do a fret");
 
 		pDoFret->setFixedSize(100, 30);
-        pDoFret->move(ChordGrid::left -2, (ChordGrid::top - pDoFret->height()) - 5);
+        pDoFret->move(ChordGrid::left -2, (ChordGrid::top - pDoFret->height()) - 7);
 		pDoFret->setStyleSheet(
 			"QPushButton {"
 			"  background-color: rgb(200, 200, 200);"
