@@ -1,0 +1,60 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.3"
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
+
+      - name: Configure CMake
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DQT_MAJOR=6
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Create deploy folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item build\Release\Chordy.exe package\
+          if (Test-Path build\Release\resources) { Copy-Item build\Release\resources package\resources -Recurse }
+          if (Test-Path build\Release\img) { Copy-Item build\Release\img package\img -Recurse }
+
+      - name: Deploy Qt runtime
+        shell: pwsh
+        run: |
+          windeployqt --release --compiler-runtime --dir package package\Chordy.exe
+
+      - name: Zip package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path package\* -DestinationPath Chordy-windows-x64.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chordy-windows-x64
+          path: Chordy-windows-x64.zip
