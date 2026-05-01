@@ -18,14 +18,20 @@ public:
     bool create(const std::string &title = "Chordy");
 
 private slots:
-    void onGridChanged(int startFret,
+    void onGridChanged(int8_t startFret,
                        std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> markers,
-                       std::vector<ChordGrid::Dot> dots);
+                       std::vector<ChordGrid::Dot> dots,
+                       int8_t barreFret,
+                       int8_t barreFrom,
+                       int8_t barreTo);
 
 private:
     QString detectChord(int startFret,
                         const std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> &markers,
-                        const std::vector<ChordGrid::Dot> &dots) const;
+                        const std::vector<ChordGrid::Dot> &dots,
+                        int barreFret,
+                        int barreFrom,
+                        int barreTo) const;
 
     ChordGrid *pGrid = nullptr;
     QPushButton *pDoFret = nullptr;

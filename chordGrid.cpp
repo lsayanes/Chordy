@@ -361,7 +361,7 @@ void ChordGrid::doFret()
 void ChordGrid::refresh()
 {
     update();
-    emit gridChanged(m_startFret, m_markers, m_dots);
+    emit gridChanged(m_startFret, m_markers, m_dots, m_barreFret, m_barreFrom, m_barreTo);
 }
 
 void ChordGrid::refreshFret()

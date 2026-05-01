@@ -98,12 +98,3 @@ Chordy/
 
 
 
-## Roadmap
-
-- [ ] Copiar diagrama como imagen al portapapeles
-- [ ] Interfaz para alternar marcadores O/X por cuerda desde la UI
-- [ ] Exportar diagrama como PNG/SVG
-- [ ] Más tipos de acordes (slash chords, inversiones, alterados)
-- [ ] Soporte para afinaciones alternativas
-- [ ] Biblioteca de acordes predefinidos
-

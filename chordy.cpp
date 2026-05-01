@@ -1,5 +1,7 @@
 #include <iostream>
 #include <set>
+#include <limits>
+#include <algorithm>
 #include "chordy.h"
 
 
@@ -93,62 +95,116 @@ bool Chordy::create(const std::string &title)
     return true;
 }
 
-void Chordy::onGridChanged(int startFret,
+void Chordy::onGridChanged(int8_t startFret,
                             std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> markers,
-                            std::vector<ChordGrid::Dot> dots)
+                            std::vector<ChordGrid::Dot> dots,
+                            int8_t barreFret,
+                            int8_t barreFrom,
+                            int8_t barreTo)
 {
-    pGrid->setName(detectChord(startFret, markers, dots));
+    pGrid->setName(detectChord(startFret, markers, dots, barreFret, barreFrom, barreTo));
 }
 
 QString Chordy::detectChord(int startFret,
                               const std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> &markers,
-                              const std::vector<ChordGrid::Dot> &dots) const
+                              const std::vector<ChordGrid::Dot> &dots,
+                              int barreFret,
+                              int barreFrom,
+                              int barreTo) const
 {
-    // Afinación estándar: E A D G B E (clases de tono, 0=C)
-    static const int openNote[6] = { 4, 9, 2, 7, 11, 4 };
+    // Afinación estándar (cuerda 0=Mi grave ... 5=Mi agudo). 0=C, 1=C#, ... 11=B.
+    static const int openNote[ChordGrid::totalStrings] = { 4, 9, 2, 7, 11, 4 };
 
     static const char *noteName[] = {
         "C","C#","D","D#","E","F","F#","G","G#","A","A#","B"
     };
 
     struct Template {
-        const char   *suffix;
-        std::vector<int> iv; // intervalos desde la raíz
+        const char       *suffix;
+        std::vector<int>  iv;       // intervalos desde la raíz (en semitonos mod 12)
     };
+    // Ordenadas de más específicas a menos. Ante igualdad de score gana la más específica.
     static const Template templates[] = {
-        { "",      { 0, 4, 7 }           },  // Mayor
-        { "m",     { 0, 3, 7 }           },  // Menor
-        { "7",     { 0, 4, 7, 10 }       },  // Dom 7
-        { "maj7",  { 0, 4, 7, 11 }       },  // Maj 7
-        { "m7",    { 0, 3, 7, 10 }       },  // m7
-        { "m7b5",  { 0, 3, 6, 10 }       },  // semidisminuido
-        { "dim",   { 0, 3, 6 }           },  // Disminuido
-        { "dim7",  { 0, 3, 6, 9 }        },  // Dim 7
-        { "aug",   { 0, 4, 8 }           },  // Aumentado
-        { "sus2",  { 0, 2, 7 }           },
-        { "sus4",  { 0, 5, 7 }           },
+        { "maj9",  { 0, 2, 4, 7, 11 }    },
+        { "9",     { 0, 2, 4, 7, 10 }    },
+        { "m9",    { 0, 2, 3, 7, 10 }    },
+        { "maj7",  { 0, 4, 7, 11 }       },
+        { "m7b5",  { 0, 3, 6, 10 }       },
+        { "dim7",  { 0, 3, 6, 9 }        },
+        { "m7",    { 0, 3, 7, 10 }       },
+        { "7",     { 0, 4, 7, 10 }       },
         { "6",     { 0, 4, 7, 9 }        },
         { "m6",    { 0, 3, 7, 9 }        },
         { "add9",  { 0, 2, 4, 7 }        },
-        { "9",     { 0, 2, 4, 7, 10 }    },
-        { "m9",    { 0, 2, 3, 7, 10 }    },
+        { "sus2",  { 0, 2, 7 }           },
+        { "sus4",  { 0, 5, 7 }           },
+        { "dim",   { 0, 3, 6 }           },
+        { "aug",   { 0, 4, 8 }           },
+        { "m",     { 0, 3, 7 }           },
+        { "",      { 0, 4, 7 }           },
     };
 
-    // Recolectar clases de tono activas
-    std::set<int> pcs;
+    // Paso 1: determinar qué nota suena (si suena) en cada cuerda.
+    //  - Muted          -> no suena.
+    //  - dot/cejilla    -> mayor de los frets pisados; se aplica startFret-1 como offset.
+    //  - resto          -> al aire (cualquier cuerda no muteada y sin nada encima).
+    int playedNote[ChordGrid::totalStrings];
     for (int s = 0; s < ChordGrid::totalStrings; ++s)
-        if (markers[s] == ChordGrid::Open)
-            pcs.insert(openNote[s]);
+        playedNote[s] = -1;
 
-    for (const auto &dot : dots)
-        pcs.insert((openNote[dot.string] + (startFret - 1) + dot.fret) % 12);
+    const int barreLo = std::min<int>(barreFrom, barreTo);
+    const int barreHi = std::max<int>(barreFrom, barreTo);
 
-    if (pcs.empty())
+    for (int s = 0; s < ChordGrid::totalStrings; ++s)
+    {
+        if (markers[s] == ChordGrid::Muted)
+            continue;
+
+        int highestFret = -1;
+        for (const auto &d : dots)
+        {
+            if (d.string == s && d.fret > highestFret)
+                highestFret = d.fret;
+        }
+
+        if (barreFret > 0 && s >= barreLo && s <= barreHi && barreFret > highestFret)
+            highestFret = barreFret;
+
+        if (highestFret > 0)
+            playedNote[s] = (openNote[s] + (startFret - 1) + highestFret) % 12;
+        else
+            playedNote[s] = openNote[s]; // al aire
+    }
+
+    // Pitch classes presentes y bajo (cuerda más grave que suena).
+    std::set<int> pcs;
+    int bassPc = -1;
+    for (int s = 0; s < ChordGrid::totalStrings; ++s)
+    {
+        if (playedNote[s] < 0) 
+            continue;
+        
+            pcs.insert(playedNote[s]);
+        
+        if (bassPc < 0) 
+            bassPc = playedNote[s];
+    }
+
+    if (pcs.empty())     
         return {};
+    
+    if (pcs.size() == 1) 
+        return noteName[*pcs.begin()];
 
-    // Probar cada clase de tono como raíz y buscar la plantilla más específica
-    QString best;
-    int bestScore = 0;
+    // Paso 2: scoring por (raíz candidata, plantilla).
+    //   matched : intervalos de la plantilla presentes en pcs
+    //   missing : intervalos de la plantilla ausentes
+    //   extra   : notas en pcs fuera de la plantilla
+    //   score   = matched*3 - missing*4 - extra*1  (+1 si la raíz coincide con el bajo)
+    QString bestName;
+    int bestScore = std::numeric_limits<int>::min();
+    int bestRoot  = -1;
+    int bestSize  = 0;
 
     for (int root : pcs)
     {
@@ -158,17 +214,37 @@ QString Chordy::detectChord(int startFret,
 
         for (const auto &t : templates)
         {
-            bool match = true;
+            int matched = 0;
             for (int i : t.iv)
-                if (!intervals.count(i)) { match = false; break; }
+                if (intervals.count(i)) ++matched;
 
-            if (match && static_cast<int>(t.iv.size()) > bestScore)
+            // Exigir al menos raíz + 3ra/5ta (2 intervalos) para evitar matches espurios.
+            if (matched < 2) continue;
+
+            const int tplSize = static_cast<int>(t.iv.size());
+            const int missing = tplSize - matched;
+            const int extra   = static_cast<int>(intervals.size()) - matched;
+
+            int score = matched * 3 - missing * 4 - extra * 1;
+            if (root == bassPc) 
+                score += 1;
+
+            if (score > bestScore || (score == bestScore && tplSize > bestSize))
             {
-                bestScore = static_cast<int>(t.iv.size());
-                best = QString("%1%2").arg(noteName[root]).arg(t.suffix);
+                bestScore = score;
+                bestSize  = tplSize;
+                bestRoot  = root;
+                bestName  = QString("%1%2").arg(noteName[root]).arg(t.suffix);
             }
         }
     }
 
-    return best.isEmpty() ? "?" : best;
+    if (bestName.isEmpty())
+        return "?";
+
+    // Inversión / slash chord: si la nota más grave no es la raíz.
+    if (bestRoot >= 0 && bassPc >= 0 && bassPc != bestRoot)
+        bestName += QString("/%1").arg(noteName[bassPc]);
+
+    return bestName;
 }

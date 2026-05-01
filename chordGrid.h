@@ -60,7 +60,10 @@ public slots:
 signals:
     void gridChanged(int8_t startFret,
                      std::array<ChordGrid::TopMarker, totalStrings> markers,
-                     std::vector<ChordGrid::Dot> dots);
+                     std::vector<ChordGrid::Dot> dots,
+                     int8_t barreFret,
+                     int8_t barreFrom,
+                     int8_t barreTo);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
