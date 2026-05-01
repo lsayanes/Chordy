@@ -94,7 +94,7 @@ Chordy/
 4. **Resultado:** El nombre del acorde se muestra debajo del diagrama, o `?` si no se encuentra coincidencia.
 
 
-<video src="https://github.com/user-attachments/assets/1d458ee7-34d1-45bf-8f3f-394375a47047" controls="controls" width="100%" height="auto"></video>
+<video src="https://github.com/user-attachments/assets/30596252-275d-4024-b447-1a851e0e57a3" controls="controls" width="100%" height="auto"></video>
 
 
 
