@@ -61,30 +61,38 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 # Link with Qt
 target_link_libraries(${PROJECT_NAME} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
 
-# Copy resources folder next to the built binary
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/resources
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
-)
+# Copy optional runtime folders next to the built binary.
+# These directories may be empty locally and therefore absent in a fresh GitHub checkout.
+if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/resources
+                $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
+    )
+endif()
 
-# Copy img folder next to the built binary
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/img
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>/img
-)
+if(EXISTS "${CMAKE_SOURCE_DIR}/img")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/img
+                $<TARGET_FILE_DIR:${PROJECT_NAME}>/img
+    )
+endif()
 
 # Install rules (for packaging / cross-deploy)
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/img
-        DESTINATION share/${PROJECT_NAME})
+if(EXISTS "${CMAKE_SOURCE_DIR}/img")
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/img
+          DESTINATION share/${PROJECT_NAME})
+endif()
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/resources
-        DESTINATION share/${PROJECT_NAME})
+if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/resources
+          DESTINATION share/${PROJECT_NAME})
+endif()
 
 
 
