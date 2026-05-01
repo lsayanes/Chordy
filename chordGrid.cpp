@@ -16,15 +16,30 @@ ChordGrid::ChordGrid(QWidget *parent, const uint8_t frets)
 {
 }
 
+QToolButton *ChordGrid::createFretButton(const std::string &toolTip, Qt::ArrowType type)
+{
+    QToolButton *pBttn = new QToolButton(this);
+
+    pBttn->setArrowType(type);
+    pBttn->setAutoRepeat(true);
+    pBttn->setAutoRepeatDelay(300);
+    pBttn->setAutoRepeatInterval(80);
+    pBttn->setFixedSize(26, 22);
+    pBttn->setToolTip(toolTip.c_str());
+
+	pBttn->setStyleSheet(
+			"QToolButton {"
+			"  background-color: rgb(200, 200, 200);"
+			"  color: rgb(0, 0, 0);"
+			"  border: 1px solid rgb(200, 200, 200);"
+			"}");    
+    
+    return pBttn;
+}
+
 bool ChordGrid::create()
 {
-    m_fretUp = new QToolButton(this);
-    m_fretUp->setArrowType(Qt::UpArrow);
-    m_fretUp->setAutoRepeat(true);
-    m_fretUp->setAutoRepeatDelay(300);
-    m_fretUp->setAutoRepeatInterval(80);
-    m_fretUp->setFixedSize(26, 22);
-    m_fretUp->setToolTip(tr("Traste inicial más agudo"));
+    m_fretUp = createFretButton("Traste inicial más agudo", Qt::UpArrow);
     connect(m_fretUp, &QToolButton::clicked, this, &ChordGrid::onStartFretUp);
 
     m_fretLabel = new QLabel(this);
@@ -37,18 +52,13 @@ bool ChordGrid::create()
     m_fretLabel->setMinimumWidth(26);
     m_fretLabel->setFixedHeight(24);
 
-    m_fretDown = new QToolButton(this);
-    m_fretDown->setArrowType(Qt::DownArrow);
-    m_fretDown->setAutoRepeat(true);
-    m_fretDown->setAutoRepeatDelay(300);
-    m_fretDown->setAutoRepeatInterval(80);
-    m_fretDown->setFixedSize(26, 22);
-    m_fretDown->setToolTip(tr("Traste inicial más grave"));
+    m_fretDown = createFretButton("Traste inicial más grave", Qt::DownArrow); 
     connect(m_fretDown, &QToolButton::clicked, this, &ChordGrid::onStartFretDown);
 
     updateFretLabelText();
     updateFretButtonsEnabled();
     positionFretControls();
+
     return true;
 }
 

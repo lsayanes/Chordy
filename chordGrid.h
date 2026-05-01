@@ -6,10 +6,10 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <QToolButton>
+#include <QLabel>
+#include <QResizeEvent>
 
-class QToolButton;
-class QLabel;
-class QResizeEvent;
 
 class ChordGrid : public QWidget
 {
@@ -20,10 +20,10 @@ public:
     static constexpr uint8_t totalStrings { 6 };
     static constexpr uint8_t chordMaxFret { 20 };
 
-    static constexpr int top      { 35 };
+    static constexpr int top      { 40 };
     static constexpr int left     { 20 };
     static constexpr int right    { 65 };
-    static constexpr int bottom   { 45 };
+    static constexpr int bottom   { 50 };
 
 
     enum TopMarker { None, Open, Muted };
@@ -72,6 +72,8 @@ private:
     void updateFretButtonsEnabled();
     /** Recalcula cejilla visual y extensión según los puntos (fila del diagrama, no m_startFret). */
     void refreshBarreFromDots();
+
+    QToolButton *createFretButton(const std::string &toolTip, Qt::ArrowType type);
 
     QToolButton *m_fretUp   = nullptr;
     QToolButton *m_fretDown = nullptr;
