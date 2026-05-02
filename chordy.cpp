@@ -14,7 +14,17 @@ Chordy::Chordy(QWidget *parent)
 bool Chordy::create(const std::string &title)
 {
     setWindowTitle(title.c_str());
-    resize(320, 580);
+
+#if defined(Q_OS_WIN)
+    // Evita que Windows muestre el botón Maximizar para una UI de tamaño fijo.
+    setWindowFlag(Qt::WindowMaximizeButtonHint, false);
+#elif defined(Q_OS_MACOS)
+    // Evita el botón verde de pantalla completa en macOS.
+    setWindowFlag(Qt::WindowFullscreenButtonHint, false);
+#endif
+
+    resize(windowInitialWidth, windowInitialHeight);
+    setMaximumSize(windowMaxWidth, windowMaxHeight);
 
     setStyleSheet("QMainWindow { background-color: rgb(255, 255, 255); }");
 

@@ -26,6 +26,11 @@ private slots:
                        int8_t barreTo);
 
 private:
+    static constexpr int windowInitialWidth  = 320;
+    static constexpr int windowInitialHeight = 580;
+    static constexpr int windowMaxWidth      = 320;
+    static constexpr int windowMaxHeight     = 580;
+
     QString detectChord(int startFret,
                         const std::array<ChordGrid::TopMarker, ChordGrid::totalStrings> &markers,
                         const std::vector<ChordGrid::Dot> &dots,

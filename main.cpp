@@ -19,6 +19,12 @@ int main(int argc, char *argv[])
 
     app.setStyle(QStyleFactory::create("Fusion"));
 
+
+    const QString iconPath = QApplication::applicationDirPath() + "/resources/chordy.png";
+    if (QFileInfo::exists(iconPath))
+        app.setWindowIcon(QIcon(iconPath));
+
+
     Chordy ChordyApp;
     bool bCreated = ChordyApp.create(appName);
 
