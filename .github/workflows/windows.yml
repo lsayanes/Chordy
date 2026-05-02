@@ -43,7 +43,30 @@ jobs:
       - name: Deploy Qt runtime
         shell: pwsh
         run: |
-          windeployqt --release --compiler-runtime --dir package package\Chordy.exe
+          windeployqt `
+            --release `
+            --compiler-runtime `
+            --no-translations `
+            --no-system-d3d-compiler `
+            --no-opengl-sw `
+            --no-virtualkeyboard `
+            --no-svg `
+            --skip-plugin-types iconengines,generic,tls,networkinformation `
+            --dir package `
+            package\Chordy.exe
+
+      - name: Trim unused image format plugins
+        shell: pwsh
+        run: |
+          # Chordy solo usa PNG/BMP, que Qt soporta sin plugin externo.
+          $keep = @()  # ningún plugin de imageformats es necesario
+          $dir  = "package\imageformats"
+          if (Test-Path $dir) {
+            Get-ChildItem $dir -Filter *.dll | Where-Object { $keep -notcontains $_.Name } | Remove-Item -Force
+            if (-not (Get-ChildItem $dir -Force | Where-Object { $_.Name -ne '.' -and $_.Name -ne '..' })) {
+              Remove-Item $dir -Recurse -Force
+            }
+          }
 
       - name: Zip package
         shell: pwsh

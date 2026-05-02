@@ -28,20 +28,20 @@ endif()
 # 3) Else auto-detect (Qt6 then Qt5)
 if(QT_REQUESTED_MAJOR STREQUAL "6")
   set(QT_VERSION_MAJOR 6)
-  find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+  find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 elseif(QT_REQUESTED_MAJOR STREQUAL "5")
   set(QT_VERSION_MAJOR 5)
-  find_package(Qt5 REQUIRED COMPONENTS Core Widgets Network)
+  find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 elseif(DEFINED Qt6_DIR)
   set(QT_VERSION_MAJOR 6)
-  find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+  find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 elseif(DEFINED Qt5_DIR)
   set(QT_VERSION_MAJOR 5)
-  find_package(Qt5 REQUIRED COMPONENTS Core Widgets Network)
+  find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 else()
   # Auto-detect, try Qt6 first then Qt5
-  find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Network)
-  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Network)
+  find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 endif()
 
 set(SOURCES
@@ -64,8 +64,8 @@ if(WIN32)
   set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-# Link with Qt
-target_link_libraries(${PROJECT_NAME} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+# Link with Qt (sin Network: Chordy no usa sockets ni HTTP, así windeployqt no copia Qt*Network.dll).
+target_link_libraries(${PROJECT_NAME} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Copy optional runtime folders next to the built binary.
 # These directories may be empty locally and therefore absent in a fresh GitHub checkout.
