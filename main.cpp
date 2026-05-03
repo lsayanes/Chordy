@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     const char *appName =  "Chordy";
 
     app.setApplicationName(appName);
-    app.setApplicationVersion("1.1");
+    app.setApplicationVersion("1.2");
     app.setOrganizationName("iDev - JalaGamaes");
 
     app.setStyle(QStyleFactory::create("Fusion"));

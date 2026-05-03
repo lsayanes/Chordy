@@ -151,11 +151,16 @@ void ChordGrid::renderDiagram(QPainter &p, const QRect &area, bool drawFretRoman
         p.drawLine(x0, y, neck_width, y);
     }
 
-    // Marcadores O / X sobre las cuerdas al aire o muteadas
+    // Marcadores O / X sobre las cuerdas al aire o muteadas.
+    // Se dibujan en una franja propia justo encima del primer traste del diagrama
+    // (es decir, encima de la fila correspondiente a m_startFret), separada de los
+    // botones superiores (Do a fret / Copiar) que ocupan la zona [0 .. topButtonsBand).
     QFont font = p.font();
     font.setPixelSize(14);
+    font.setBold(true);
     p.setFont(font);
     p.setPen(Qt::black);
+    const int markerY = area.top() + top - markerH - markerGap;
     for (int8_t s = 0; s < totalStrings; s++)
     {
         if (m_markers[s] == None)
@@ -163,7 +168,7 @@ void ChordGrid::renderDiagram(QPainter &p, const QRect &area, bool drawFretRoman
 
         QString text = (m_markers[s] == Open) ? "O" : "X";
         int x = x0 + s * cellW;
-        QRect markerRect(x - 8, area.top() + 2, 16, top - 4);
+        QRect markerRect(x - 8, markerY, 16, markerH);
         p.drawText(markerRect, Qt::AlignCenter, text);
     }
 
@@ -230,18 +235,59 @@ void ChordGrid::mousePressEvent(QMouseEvent *event)
 
     // determinar cuerda más cercana
     int8_t s = (px - left + cellW / 2) / cellW;
-    if (s < 0 || s >= totalStrings) 
+    if (s < 0 || s >= totalStrings)
         return;
 
-    // determinar traste (1-based)
+    // Carril de marcadores X / O: justo encima del primer traste del diagrama.
+    // Click ahí cicla None -> Open -> Muted -> None para esa cuerda.
+    const int markerY    = top - markerH - markerGap;
+    const int markerYEnd = top - markerGap;
+    if (py >= markerY && py < markerYEnd)
+    {
+        switch (m_markers[s])
+        {
+            case None:  m_markers[s] = Open;  break;
+            case Open:  m_markers[s] = Muted; break;
+            case Muted: m_markers[s] = None;  break;
+        }
+
+        // Si la cuerda queda marcada (Open o Muted) eliminamos cualquier dot que
+        // hubiera sobre ella: dibujarlos junto a la marca sería contradictorio
+        // y además detectChord va a forzar el comportamiento de la marca.
+        if (m_markers[s] != None)
+        {
+            m_dots.erase(std::remove_if(m_dots.begin(), m_dots.end(),
+                [s](const Dot &d) { return d.string == s; }),
+                m_dots.end());
+
+            // Una cejilla que toque esa cuerda también deja de tener sentido:
+            // la recortamos al rango que sigue siendo válido o la quitamos.
+            if (m_barreFret > 0)
+            {
+                const int8_t lo = std::min(m_barreFrom, m_barreTo);
+                const int8_t hi = std::max(m_barreFrom, m_barreTo);
+                if (s >= lo && s <= hi)
+                    m_barreFret = -1;
+            }
+        }
+
+        refresh();
+        return;
+    }
+
+    // Click dentro del mástil: toggle de dot.
     int8_t f = (py - top) / cellH + 1;
-    if (f < 1 || f > totalFrets) 
+    if (f < 1 || f > totalFrets)
+        return;
+
+    // No tiene sentido pisar una cuerda que el usuario marcó como muteada o al aire.
+    if (m_markers[s] != None)
         return;
 
     // toggle: si ya existe ese dot, lo remueve; si no, lo agrega
-    auto it = std::find_if(m_dots.begin(), m_dots.end(),[s, f](const Dot &d) 
-    { 
-        return d.string == s && d.fret == f; 
+    auto it = std::find_if(m_dots.begin(), m_dots.end(),[s, f](const Dot &d)
+    {
+        return d.string == s && d.fret == f;
     });
 
     if (it != m_dots.end())
@@ -496,8 +542,8 @@ void ChordGrid::copyToClipboard()
     if (!cb)
         return;
 
-    // Cargamos texto e imagen en el mismo paquete: el destino elige según el formato
-    // que pide al pegar (apps gráficas → imagen PNG, editores de texto → texto).
+    // Cargo texto e imagen en el mismo paquete: el destino elige según el formato
+    // que pide al pegar (apps gráficas -> imagen PNG, editores de texto -> texto).
     auto *mime = new QMimeData;
     mime->setText(toText());
 

@@ -24,10 +24,18 @@ public:
     static constexpr uint8_t totalStrings { 6 };
     static constexpr uint8_t chordMaxFret { 20 };
 
-    static constexpr int top      { 40 };
-    static constexpr int left     { 20 };
-    static constexpr int right    { 65 };
-    static constexpr int bottom   { 50 };
+    // top reserva espacio para dos zonas apiladas:
+    //   [0 .. topButtonsBand)            -> botones (Do a fret / Copiar) dibujados por Chordy
+    //   [top - markerH - markerGap .. top) -> carril de marcadores X / O por cuerda
+    // El mástil (primer traste = m_startFret) empieza en y = top, así las marcas
+    // quedan inmediatamente por encima de la fila correspondiente a m_startFret.
+    static constexpr int top              { 70 };
+    static constexpr int left             { 20 };
+    static constexpr int right            { 65 };
+    static constexpr int bottom           { 50 };
+    static constexpr int topButtonsBand   { 40 };  // alto reservado arriba para los botones
+    static constexpr int markerH          { 26 };
+    static constexpr int markerGap        { 4 };   // separación entre marca y primer traste
 
 
     enum TopMarker { None, Open, Muted };
@@ -52,10 +60,8 @@ public:
 
     void setName(const QString &name);
 
-    /** Representación textual del diagrama (mástil + nombre del acorde) lista para portapapeles. */
+    
     QString toText() const;
-
-    /** Renderiza el diagrama (sin botones) a un QImage. Tamaño por defecto = tamaño actual del widget. */
     QImage  toImage(const QSize &targetSize = QSize()) const;
 
     void refresh();
@@ -87,12 +93,7 @@ private:
     void updateFretLabelText();
     void updateFretButtonsEnabled();
 
-    /** Pinta el diagrama del acorde dentro de `area`. Si drawFretRoman == true,
-     *  además pinta el número romano del traste (cuando se renderiza a imagen, que no
-     *  tiene QLabel hijo). En el paintEvent del widget se pasa false, porque ese
-     *  número lo muestra el QLabel `m_fretLabel`. */
     void renderDiagram(QPainter &p, const QRect &area, bool drawFretRoman) const;
-
     QToolButton *createFretButton(const std::string &toolTip, Qt::ArrowType type);
 
     QToolButton *m_fretUp   = nullptr;

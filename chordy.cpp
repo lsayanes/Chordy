@@ -74,16 +74,21 @@ bool Chordy::create(const std::string &title)
 			"  font-family: Arial, sans-serif;"
 			"}";
 
-		pDoFret->setText("Do a fret");
+		// Los botones viven en la franja [0 .. ChordGrid::topButtonsBand) reservada
+		// arriba del widget; el carril de marcadores X / O queda inmediatamente
+		// debajo, y el mástil empieza en y = ChordGrid::top.
+		const int kButtonsY = 5 + ((ChordGrid::topButtonsBand - 30) / 2);
+
+		pDoFret->setText("Barre");
+        pCopy->setToolTip("Crea o elimina una cejilla de dedo");
 		pDoFret->setFixedSize(100, 30);
-		pDoFret->move(ChordGrid::left - 2, (ChordGrid::top - pDoFret->height()) - 7);
+		pDoFret->move(ChordGrid::left - 2, kButtonsY);
 		pDoFret->setStyleSheet(kPillStyle);
 
-		pCopy->setText("Copiar");
-		pCopy->setToolTip("Copiar el diagrama del acorde como texto");
+		pCopy->setText("Copy");
+		pCopy->setToolTip("Copiar el diagrama del acorde como imagen y texto");
 		pCopy->setFixedSize(80, 30);
-		pCopy->move(ChordGrid::left - 2 + pDoFret->width() + 6,
-					(ChordGrid::top - pCopy->height()) - 7);
+		pCopy->move(ChordGrid::left - 2 + pDoFret->width() + 6, kButtonsY);
 		pCopy->setStyleSheet(kPillStyle);
         
 		// Ejemplo: Em9/11 desde traste VI
@@ -179,8 +184,18 @@ QString Chordy::detectChord(int startFret,
 
     for (int s = 0; s < ChordGrid::totalStrings; ++s)
     {
+        // Marca explícita del usuario sobre la cuerda (X / O) tiene prioridad
+        // sobre cualquier dot o cejilla que haya quedado debajo:
+        //   Muted -> la cuerda no suena.
+        //   Open  -> la cuerda suena al aire (ignora dots y cejilla en esa cuerda).
         if (markers[s] == ChordGrid::Muted)
             continue;
+
+        if (markers[s] == ChordGrid::Open)
+        {
+            playedNote[s] = openNote[s];
+            continue;
+        }
 
         int highestFret = -1;
         for (const auto &d : dots)
