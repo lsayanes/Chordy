@@ -23,8 +23,13 @@ bool Chordy::create(const std::string &title)
     setWindowFlag(Qt::WindowFullscreenButtonHint, false);
 #endif
 
+#ifndef Q_OS_ANDROID
+    // En desktop usamos tamaño de ventana fijo (UI tipo "calculadora").
+    // En Android la app llena la pantalla completa (showMaximized en main.cpp)
+    // y los widgets escalan con resizeEvent del grid.
     resize(windowInitialWidth, windowInitialHeight);
     setMaximumSize(windowMaxWidth, windowMaxHeight);
+#endif
 
     setStyleSheet("QMainWindow { background-color: rgb(255, 255, 255); }");
 
@@ -62,33 +67,51 @@ bool Chordy::create(const std::string &title)
 		connect(pCopy, &QPushButton::clicked,
 				pGrid, &ChordGrid::copyToClipboard);
 
-		static const char *kPillStyle =
+		// En Android los botones tienen que ser táctilmente cómodos (~48 dp);
+		// en desktop son chicos como una pill de calculadora.
+#ifdef Q_OS_ANDROID
+		static constexpr int kBarreW   = 150;
+		static constexpr int kCopyW    = 120;
+		static constexpr int kBtnH     = 56;
+		static constexpr int kBtnGap   = 12;
+		static constexpr int kFontPx   = 16;
+		static constexpr int kRadiusPx = 28;
+#else
+		static constexpr int kBarreW   = 100;
+		static constexpr int kCopyW    = 80;
+		static constexpr int kBtnH     = 30;
+		static constexpr int kBtnGap   = 6;
+		static constexpr int kFontPx   = 12;
+		static constexpr int kRadiusPx = 15;
+#endif
+
+		const QString kPillStyle = QString::fromLatin1(
 			"QPushButton {"
 			"  background-color: rgb(200, 200, 200);"
 			"  color: rgb(0, 0, 0);"
 			"  border: 1px solid rgb(200, 200, 200);"
-			"  border-radius: 15px;"
+			"  border-radius: %1px;"
 			"  padding: 5px;"
-			"  font-size: 12px;"
+			"  font-size: %2px;"
 			"  font-weight: bold;"
 			"  font-family: Arial, sans-serif;"
-			"}";
+			"}").arg(kRadiusPx).arg(kFontPx);
 
 		// Los botones viven en la franja [0 .. ChordGrid::topButtonsBand) reservada
 		// arriba del widget; el carril de marcadores X / O queda inmediatamente
 		// debajo, y el mástil empieza en y = ChordGrid::top.
-		const int kButtonsY = 5 + ((ChordGrid::topButtonsBand - 30) / 2);
+		const int kButtonsY = 5 + ((ChordGrid::topButtonsBand - kBtnH) / 2);
 
 		pDoFret->setText("Barre");
-        pCopy->setToolTip("Crea o elimina una cejilla de dedo");
-		pDoFret->setFixedSize(100, 30);
+		pDoFret->setToolTip("Crea o elimina una cejilla de dedo");
+		pDoFret->setFixedSize(kBarreW, kBtnH);
 		pDoFret->move(ChordGrid::left - 2, kButtonsY);
 		pDoFret->setStyleSheet(kPillStyle);
 
 		pCopy->setText("Copy");
 		pCopy->setToolTip("Copiar el diagrama del acorde como imagen y texto");
-		pCopy->setFixedSize(80, 30);
-		pCopy->move(ChordGrid::left - 2 + pDoFret->width() + 6, kButtonsY);
+		pCopy->setFixedSize(kCopyW, kBtnH);
+		pCopy->move(ChordGrid::left - 2 + pDoFret->width() + kBtnGap, kButtonsY);
 		pCopy->setStyleSheet(kPillStyle);
         
 		// Ejemplo: Em9/11 desde traste VI

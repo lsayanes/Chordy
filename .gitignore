@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Build outputs
+build/
+build-android-*/
+out/
+
+# Qt Creator
+CMakeLists.txt.user
+*.user
+
+# Editor
+.vscode/
+.idea/
+
+# Compilados
+*.o
+*.obj
+*.so
+*.dylib
+*.exe
+*.app/
+Chordy
+!Chordy-windows-x64/
+
+# Local Android tooling (venv para aqtinstall + HOME sandbox de aqt)
+.venv-aqt/
+.aqt-home/
+
+# Movies / capturas pesadas (ya están en el repo, pero futuras quedan fuera)
+*.mov

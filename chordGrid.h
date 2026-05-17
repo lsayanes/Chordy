@@ -25,16 +25,25 @@ public:
     static constexpr uint8_t chordMaxFret { 20 };
 
     // top reserva espacio para dos zonas apiladas:
-    //   [0 .. topButtonsBand)            -> botones (Do a fret / Copiar) dibujados por Chordy
+    //   [0 .. topButtonsBand)            -> botones (Barre / Copy) dibujados por Chordy
     //   [top - markerH - markerGap .. top) -> carril de marcadores X / O por cuerda
     // El mástil (primer traste = m_startFret) empieza en y = top, así las marcas
     // quedan inmediatamente por encima de la fila correspondiente a m_startFret.
+    //
+    // En Android usamos una franja superior y un carril de marcadores más
+    // generosos para que sean cómodos al tacto (target táctil ≥ ~48 dp).
+#ifdef Q_OS_ANDROID
+    static constexpr int top              { 130 };
+    static constexpr int topButtonsBand   { 80 };
+    static constexpr int markerH          { 44 };
+#else
     static constexpr int top              { 70 };
+    static constexpr int topButtonsBand   { 40 };
+    static constexpr int markerH          { 26 };
+#endif
     static constexpr int left             { 20 };
     static constexpr int right            { 65 };
     static constexpr int bottom           { 50 };
-    static constexpr int topButtonsBand   { 40 };  // alto reservado arriba para los botones
-    static constexpr int markerH          { 26 };
     static constexpr int markerGap        { 4 };   // separación entre marca y primer traste
 
 

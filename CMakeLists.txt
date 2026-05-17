@@ -4,44 +4,44 @@ project(Chordy)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Configuration for local development on Mac (for testing)
-# For cross-compilation, use: -DCMAKE_TOOLCHAIN_FILE=toolchain-aarch64.cmake
-
-# Configure Qt automoc
+# Configure Qt automoc / autorcc / autouic
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Qt version selection:
-# - You can force with: -DQT_MAJOR=6 (or 5), or environment QT_MAJOR=6|5
-# - If Qt6_DIR/Qt5_DIR is provided, it takes precedence
-set(QT_REQUESTED_MAJOR "" CACHE STRING "Force Qt major version (5 or 6). Empty = auto")
-if(DEFINED QT_MAJOR AND NOT "${QT_MAJOR}" STREQUAL "")
-  set(QT_REQUESTED_MAJOR "${QT_MAJOR}")
-elseif(DEFINED ENV{QT_MAJOR} AND NOT "$ENV{QT_MAJOR}" STREQUAL "")
-  set(QT_REQUESTED_MAJOR "$ENV{QT_MAJOR}")
-endif()
-
-# Selection priority:
-# 1) Explicit QT_MAJOR=6|5 (or env) wins
-# 2) If not set, honor explicit DIR hints
-# 3) Else auto-detect (Qt6 then Qt5)
-if(QT_REQUESTED_MAJOR STREQUAL "6")
+# ============================================================================
+# Selección de versión Qt y find_package
+#   - Android: forzamos Qt6 (Qt5 no tiene soporte moderno de cross-build, y Qt6
+#              trae qt_add_executable + qt_finalize_target con androiddeployqt).
+#   - Desktop: respeta QT_MAJOR=6|5, hints Qt6_DIR/Qt5_DIR, o auto-detecta.
+# ============================================================================
+if(ANDROID)
   set(QT_VERSION_MAJOR 6)
   find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-elseif(QT_REQUESTED_MAJOR STREQUAL "5")
-  set(QT_VERSION_MAJOR 5)
-  find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
-elseif(DEFINED Qt6_DIR)
-  set(QT_VERSION_MAJOR 6)
-  find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-elseif(DEFINED Qt5_DIR)
-  set(QT_VERSION_MAJOR 5)
-  find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 else()
-  # Auto-detect, try Qt6 first then Qt5
-  find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
-  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+  set(QT_REQUESTED_MAJOR "" CACHE STRING "Force Qt major version (5 or 6). Empty = auto")
+  if(DEFINED QT_MAJOR AND NOT "${QT_MAJOR}" STREQUAL "")
+    set(QT_REQUESTED_MAJOR "${QT_MAJOR}")
+  elseif(DEFINED ENV{QT_MAJOR} AND NOT "$ENV{QT_MAJOR}" STREQUAL "")
+    set(QT_REQUESTED_MAJOR "$ENV{QT_MAJOR}")
+  endif()
+
+  if(QT_REQUESTED_MAJOR STREQUAL "6")
+    set(QT_VERSION_MAJOR 6)
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+  elseif(QT_REQUESTED_MAJOR STREQUAL "5")
+    set(QT_VERSION_MAJOR 5)
+    find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+  elseif(DEFINED Qt6_DIR)
+    set(QT_VERSION_MAJOR 6)
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+  elseif(DEFINED Qt5_DIR)
+    set(QT_VERSION_MAJOR 5)
+    find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+  else()
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+  endif()
 endif()
 
 set(SOURCES
@@ -55,49 +55,81 @@ set(HEADERS
     chordy.h
 )
 
-# Create executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+set(RESOURCES
+    chordy.qrc
+)
 
-# On Windows, build as a GUI application so the OS does not open a console
-# window next to the Qt main window.
+# ============================================================================
+# Target ejecutable
+#   - En Android usamos qt_add_executable (Qt6) para que la build genere una
+#     librería compartida y todo el bundle Android (manifest + APK + JNI).
+#   - En desktop seguimos con add_executable.
+# ============================================================================
+if(ANDROID)
+  qt_add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES})
+else()
+  add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES})
+endif()
+
+# Windows: build como GUI app (sin consola al lado).
 if(WIN32)
   set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-# Link with Qt (sin Network: Chordy no usa sockets ni HTTP, así windeployqt no copia Qt*Network.dll).
-target_link_libraries(${PROJECT_NAME} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets)
-
-# Copy optional runtime folders next to the built binary.
-# These directories may be empty locally and therefore absent in a fresh GitHub checkout.
-if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_SOURCE_DIR}/resources
-                $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
-    )
+# ============================================================================
+# Empaquetado Android
+# ============================================================================
+if(ANDROID)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/android"
+    QT_ANDROID_TARGET_SDK_VERSION  35
+    QT_ANDROID_MIN_SDK_VERSION     28
+    QT_ANDROID_VERSION_NAME        "1.2"
+    QT_ANDROID_VERSION_CODE        12000
+  )
 endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/img")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_SOURCE_DIR}/img
-                $<TARGET_FILE_DIR:${PROJECT_NAME}>/img
-    )
-endif()
-
-# Install rules (for packaging / cross-deploy)
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION bin
+# Keyword signature (PRIVATE) obligatorio cuando se usa qt_add_executable Android:
+# qt_finalize_target enlaza plugins con sintaxis keywords; CMake exige coherentes.
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Widgets
 )
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/img")
-  install(DIRECTORY ${CMAKE_SOURCE_DIR}/img
-          DESTINATION share/${PROJECT_NAME})
-endif()
+# ============================================================================
+# Recursos en disco (solo desktop: en Android todo va por el qrc).
+# ============================================================================
+if(NOT ANDROID)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
+      add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_directory
+                  ${CMAKE_SOURCE_DIR}/resources
+                  $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
+      )
+  endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
-  install(DIRECTORY ${CMAKE_SOURCE_DIR}/resources
-          DESTINATION share/${PROJECT_NAME})
+  if(EXISTS "${CMAKE_SOURCE_DIR}/img")
+      add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_directory
+                  ${CMAKE_SOURCE_DIR}/img
+                  $<TARGET_FILE_DIR:${PROJECT_NAME}>/img
+      )
+  endif()
+
+  install(TARGETS ${PROJECT_NAME}
+      RUNTIME DESTINATION bin
+  )
+
+  if(EXISTS "${CMAKE_SOURCE_DIR}/img")
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/img
+            DESTINATION share/${PROJECT_NAME})
+  endif()
+
+  if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/resources
+            DESTINATION share/${PROJECT_NAME})
+  endif()
 endif()
 
 
